@@ -328,3 +328,48 @@ func BenchmarkMergedSeriesSet(b *testing.B) {
 		}
 	}
 }
+
+var testLsetMap = map[string]string{
+	"a":                           "1",
+	"c":                           "2",
+	"d":                           "dsfsdfsdfsdf123414234",
+	"124134235423534534ffdasdfsf": "1",
+	"":                            "",
+	"b":                           "",
+}
+
+func TestUnsafePromLabelsToLabels(t *testing.T) {
+	testutil.Equals(t, PromLabelsToLabels(labels.FromMap(testLsetMap)), UnsafePromLabelsToLabels(labels.FromMap(testLsetMap)))
+}
+
+func TestUnsafeLabelsToPromLabels(t *testing.T) {
+	testutil.Equals(t, labels.FromMap(testLsetMap), UnsafeLabelsToPromLabels(PromLabelsToLabels(labels.FromMap(testLsetMap))))
+}
+
+func BenchmarkUnsafeVSSafeLabelsConversion(b *testing.B) {
+	const (
+		fmtLbl = "%07daaaaaaaaaabbbbbbbbbbccccccccccdddddddddd"
+		num    = 10000
+	)
+	lbls := make([]labels.Label, 0, num)
+	for i := 0; i < num; i++ {
+		lbls = append(lbls, labels.Label{Name: fmt.Sprintf(fmtLbl, i), Value: fmt.Sprintf(fmtLbl, i)})
+	}
+
+	var converted labels.Labels
+	b.Run("safe", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			converted = LabelsToPromLabels(PromLabelsToLabels(lbls))
+		}
+	})
+	testutil.Equals(b, num, len(converted))
+	b.Run("unsafe", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			converted = UnsafeLabelsToPromLabels(UnsafePromLabelsToLabels(lbls))
+		}
+	})
+	testutil.Equals(b, num, len(converted))
+
+}

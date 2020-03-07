@@ -5,6 +5,7 @@ package storepb
 
 import (
 	"strings"
+	"unsafe"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 )
@@ -171,8 +172,31 @@ func LabelsToPromLabels(lset []Label) labels.Labels {
 	for i, l := range lset {
 		ret[i] = labels.Label{Name: l.Name, Value: l.Value}
 	}
-
 	return ret
+}
+
+// UnsafeLabelsToPromLabels converts proto labels to Prometheus labels in type unsafe manner.
+// It reuses the same memory. Caller should abort using passed []Labels.
+//
+// NOTE: This depends on order of struct fields etc, so use with extreme care.
+func UnsafeLabelsToPromLabels(lset []Label) labels.Labels {
+	return *(*[]labels.Label)(unsafe.Pointer(&lset))
+}
+
+func PromLabelsToLabels(lset labels.Labels) []Label {
+	ret := make([]Label, len(lset))
+	for i, l := range lset {
+		ret[i] = Label{Name: l.Name, Value: l.Value}
+	}
+	return ret
+}
+
+// UnsafePromLabelsToLabels converts Prometheus labels to proto labels in type unsafe manner.
+// It reuses the same memory. Caller should abort using passed labels.Labels.
+//
+// // NOTE: This depends on order of struct fields etc, so use with extreme care.
+func UnsafePromLabelsToLabels(lset labels.Labels) []Label {
+	return *(*[]Label)(unsafe.Pointer(&lset))
 }
 
 func LabelsToString(lset []Label) string {
