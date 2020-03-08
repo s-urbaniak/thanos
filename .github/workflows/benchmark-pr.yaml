@@ -1,0 +1,26 @@
+name: benchmark
+
+on: pull_request
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go.
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.6
+
+      - name: Check out code into the Go module directory.
+        uses: actions/checkout@v2
+
+      - name: Give me just shared dir lol GitHub Action!
+        run: mkdir /tmp/cache
+
+      - uses: actions/cache@v1
+        with:
+          path: /tmp/cache
+          key: benchmark-results
+
+      - name: Run all benchmarks and compare with master.
+        run: make bench
